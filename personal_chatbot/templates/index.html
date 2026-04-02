@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="app">
+    <div class="header">Aura</div>
+
+    <div id="chatbox" class="chatbox">
+        <div class="message bot">How can I help you today?</div>
+    </div>
+
+    <div class="input-container">
+        <div class="input-area">
+            <input id="input" type="text" placeholder="Enter a prompt here" autocomplete="off">
+            <button onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
