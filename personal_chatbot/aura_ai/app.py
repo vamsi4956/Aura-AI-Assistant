@@ -1,17 +1,23 @@
 import os
 import sys
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS # Optional but helpful for web demos
 
-# This line tells Python to look inside the current folder for modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# --- PATH FIX FOR RENDER ---
+# This ensures Python finds brain.py and actions.py regardless of where the server starts
+base_dir = os.path.dirname(os.path.abspath(__file__))
+if base_dir not in sys.path:
+    sys.path.append(base_dir)
 
-# Now these imports will work on Render!
 from brain import get_response
 from actions import perform_action
 
+# Pointing to templates and static folders relative to this file
 app = Flask(__name__, 
-            template_folder='../templates', 
-            static_folder='../static')
+            template_folder=os.path.join(base_dir, '../templates'), 
+            static_folder=os.path.join(base_dir, '../static'))
+
+CORS(app) # Allows the browser to talk to the server smoothly
 
 @app.route("/")
 def home():
@@ -19,13 +25,25 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.get_json()
-    user_input = data.get("message", "").strip()
-    
-    # Logic: Actions first, then Brain
-    response = perform_action(user_input) or get_response(user_input)
-    
-    return jsonify({"response": response})
+    try:
+        data = request.get_json()
+        user_input = data.get("message", "").strip()
+        
+        if not user_input:
+            return jsonify({"response": "I'm listening..."})
+        
+        # Priority Logic: Check for physical actions first
+        response = perform_action(user_input)
+        
+        # If no action was triggered, use the Brain (Intent Engine)
+        if not response:
+            response = get_response(user_input)
+        
+        return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"response": f"Error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Render requires the app to listen on '0.0.0.0' and use the 'PORT' environment variable
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
