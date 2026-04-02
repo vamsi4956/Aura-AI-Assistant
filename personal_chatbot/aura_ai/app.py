@@ -1,14 +1,17 @@
 import os
+import sys
 from flask import Flask, render_template, request, jsonify
+
+# This line tells Python to look inside the current folder for modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Now these imports will work on Render!
 from brain import get_response
 from actions import perform_action
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(base_dir)
-
 app = Flask(__name__, 
-            template_folder=os.path.join(project_root, "templates"),
-            static_folder=os.path.join(project_root, "static"))
+            template_folder='../templates', 
+            static_folder='../static')
 
 @app.route("/")
 def home():
