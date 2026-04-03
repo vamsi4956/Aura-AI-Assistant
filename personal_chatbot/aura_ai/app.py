@@ -4,22 +4,34 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
 # --- PATH FIX FOR RENDER ---
-# Get the directory where THIS file (app.py) lives
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Add base_dir to Python path so imports work
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-# Now import your modules
-from brain import get_response
-from actions import perform_action
+# Print debug info
+print(f"=== DEBUG INFO ===", flush=True)
+print(f"Base dir: {base_dir}", flush=True)
+print(f"Python path: {sys.path}", flush=True)
+print(f"PORT env var: {os.environ.get('PORT', 'NOT SET')}", flush=True)
 
-# Setup Flask with correct paths
-# Templates should be at: personal_chatbot/templates/
-# Static should be at: personal_chatbot/static/
+try:
+    from brain import get_response
+    from actions import perform_action
+    print("✓ Successfully imported brain and actions", flush=True)
+except Exception as e:
+    print(f"✗ Import error: {e}", flush=True)
+    # Create dummy functions if imports fail
+    def get_response(text):
+        return f"Echo: {text}"
+    def perform_action(text):
+        return None
+
+# Setup Flask
 template_path = os.path.join(os.path.dirname(base_dir), 'templates')
 static_path = os.path.join(os.path.dirname(base_dir), 'static')
+
+print(f"Template path: {template_path}", flush=True)
+print(f"Static path: {static_path}", flush=True)
 
 app = Flask(__name__, 
             template_folder=template_path,
@@ -29,7 +41,10 @@ CORS(app)
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    try:
+        return render_template("index.html")
+    except Exception as e:
+        return f"<h1>Aura AI Chatbot</h1><p>Template error: {e}</p><p>Try <a href='/health'>/health</a></p>"
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -40,28 +55,26 @@ def chat():
         if not user_input:
             return jsonify({"response": "I'm listening..."})
         
-        # Priority Logic: Check for physical actions first
         response = perform_action(user_input)
         
-        # If no action was triggered, use the Brain (Intent Engine)
         if not response:
             response = get_response(user_input)
         
         return jsonify({"response": response})
     
     except Exception as e:
-        print(f"Error in /chat: {str(e)}")  # This will show in Render logs
-        return jsonify({"response": f"Oops! Something went wrong: {str(e)}"}), 500
+        print(f"Error in /chat: {str(e)}", flush=True)
+        return jsonify({"response": f"Error: {str(e)}"}), 500
 
 @app.route("/health")
 def health():
-    """Health check endpoint for Render"""
     return "OK", 200
 
+# This is crucial - gunicorn will call this app object directly
+# So we DON'T want the if __name__ == '__main__' block to run
+print(f"Flask app created successfully!", flush=True)
+
 if __name__ == "__main__":
-    # Render provides PORT environment variable
     port = int(os.environ.get("PORT", 10000))
-    
-    # 0.0.0.0 allows external connections (required for Render)
-    print(f"Starting server on port {port}...")
+    print(f"Starting Flask dev server on port {port}...", flush=True)
     app.run(host='0.0.0.0', port=port, debug=False)
