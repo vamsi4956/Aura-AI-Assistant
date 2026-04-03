@@ -44,6 +44,9 @@ def chat():
         return jsonify({"response": f"Error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    # Render requires the app to listen on '0.0.0.0' and use the 'PORT' environment variable
-    port = int(os.environ.get("PORT", 5000))
+    # Render provides a 'PORT' environment variable. 
+    # If it's not found (like on your laptop), it defaults to 5000.
+    port = int(os.environ.get("PORT", 10000))
+    
+    # '0.0.0.0' is REQUIRED for cloud hosting to allow outside traffic
     app.run(host='0.0.0.0', port=port)
