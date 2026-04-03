@@ -1,23 +1,31 @@
 import os
 import sys
 from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS # Optional but helpful for web demos
+from flask_cors import CORS
 
 # --- PATH FIX FOR RENDER ---
-# This ensures Python finds brain.py and actions.py regardless of where the server starts
+# Get the directory where THIS file (app.py) lives
 base_dir = os.path.dirname(os.path.abspath(__file__))
-if base_dir not in sys.path:
-    sys.path.append(base_dir)
 
+# Add base_dir to Python path so imports work
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+# Now import your modules
 from brain import get_response
 from actions import perform_action
 
-# Pointing to templates and static folders relative to this file
-app = Flask(__name__, 
-            template_folder=os.path.join(base_dir, '../templates'), 
-            static_folder=os.path.join(base_dir, '../static'))
+# Setup Flask with correct paths
+# Templates should be at: personal_chatbot/templates/
+# Static should be at: personal_chatbot/static/
+template_path = os.path.join(os.path.dirname(base_dir), 'templates')
+static_path = os.path.join(os.path.dirname(base_dir), 'static')
 
-CORS(app) # Allows the browser to talk to the server smoothly
+app = Flask(__name__, 
+            template_folder=template_path,
+            static_folder=static_path)
+
+CORS(app)
 
 @app.route("/")
 def home():
@@ -40,13 +48,20 @@ def chat():
             response = get_response(user_input)
         
         return jsonify({"response": response})
+    
     except Exception as e:
-        return jsonify({"response": f"Error: {str(e)}"}), 500
+        print(f"Error in /chat: {str(e)}")  # This will show in Render logs
+        return jsonify({"response": f"Oops! Something went wrong: {str(e)}"}), 500
+
+@app.route("/health")
+def health():
+    """Health check endpoint for Render"""
+    return "OK", 200
 
 if __name__ == "__main__":
-    # Render provides a 'PORT' environment variable. 
-    # If it's not found (like on your laptop), it defaults to 5000.
+    # Render provides PORT environment variable
     port = int(os.environ.get("PORT", 10000))
     
-    # '0.0.0.0' is REQUIRED for cloud hosting to allow outside traffic
-    app.run(host='0.0.0.0', port=port)
+    # 0.0.0.0 allows external connections (required for Render)
+    print(f"Starting server on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
